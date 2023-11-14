@@ -1,6 +1,7 @@
 import cv2
 from snooker_table import find_snooker_table
 from balls import find_balls
+from holes import find_holes
 
 if __name__ == '__main__':
     # Read the image
@@ -12,5 +13,6 @@ if __name__ == '__main__':
     # Display the result
     cv2.imshow('Snooker Table', img)
     cv2.imshow('asd', find_balls(snooker_table))
+    cv2.imshow('Holes', find_holes(snooker_table))
     cv2.waitKey(0)
     cv2.destroyAllWindows()
