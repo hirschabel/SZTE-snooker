@@ -48,10 +48,10 @@ def filter_ctrs(ctrs, imw, imh, max=50, min_s=5, max_s=1000, alpha=3.445):
         area = cv2.contourArea(ctrs[i])
 
         #remove from sides
-        print(x)
-        print(y)
-        print(imw - max)
-        print('---')
+        #print(x)
+        #print(y)
+        #print(imw - max)
+        #print('---')
         if (x < max or x > (imw - max)) or (y < max or y > (imh - max)):
             continue
 
@@ -72,12 +72,12 @@ def find_balls(src):
     blur_GRAY = cv2.cvtColor(transformed_blur, cv2.COLOR_BGR2GRAY)  # rgb version
     # mask
     mask = cv2.inRange(blur_GRAY, 40, 120)  # table's mask
-    cv2.imshow('asd Table', mask)
+    #cv2.imshow('asd Table', mask)
 
     # find contours and filter them
     ctrs, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)  # find contours
-    print(len(mask))
-    print(len(mask[0]))
+    #print(len(mask))
+    #print(len(mask[0]))
     ctrs = filter_ctrs(ctrs, len(mask[0]), len(mask))  # filter contours by sizes and shapes
     # draw table+balls
     final = draw_balls(ctrs, src, radius=8, img=src)  # draw all found contours
