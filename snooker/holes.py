@@ -24,7 +24,7 @@ def find_holes(img):
     contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Minimum kontúr terület
-    min_contour_area = 0
+    min_contour_area = 50
 
     # Kép felső és alsó határ pixelei, amikben keressük a lyukakat
     min_x, max_x = 10, image.shape[0] - 50  # TODO: képmérethez % VAGY azonos magas képek
