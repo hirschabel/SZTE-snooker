@@ -1,101 +1,51 @@
-import time
-
-import cv2
-from snooker_table import find_snooker_table
-from balls import find_balls
-from holes import find_holes
-
-# Videó feldolgozás
-def process_video(input_path, output_path):
-    # Open the video file
-    video_capture = cv2.VideoCapture(input_path)
-
-    # Get video properties
-    frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(video_capture.get(cv2.CAP_PROP_FPS))
-
-    # Create VideoWriter object to save the processed video
-    out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (frame_width, frame_height))
-
-    while video_capture.isOpened():
-        ret, frame = video_capture.read()
-
-        if not ret:
-            break
-
-        # Find snooker table boundaries
-        _, snooker_table = find_snooker_table(frame.copy())
-
-        # Find balls present on table
-        balls = find_balls(snooker_table.copy())
-
-        # Find holes
-        holes = find_holes(snooker_table.copy())
-
-        # Final image
-        final_image = cv2.addWeighted(balls, 0.5, holes, 0.5, 0)
-
-        # Write the processed frame to the output video
-        out.write(final_image)
-
-        # Display the processed frame (optional)
-        cv2.imshow('Processed Frame', final_image)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    # Release video capture and writer
-    video_capture.release()
-    out.release()
-    cv2.destroyAllWindows()
-
-
-# Ez az eddigi működés értékek állítgatására jó
-def process_picture():
-    # Read the image
-    orig_image = cv2.imread("videos/teszt1.png")
-
-    # Find snooker table boundaries
-    img, snooker_table = find_snooker_table(orig_image.copy())
-
-    # Find balls present on table
-    balls = find_balls(snooker_table.copy())
-
-    # Find holes
-    holes = find_holes(snooker_table.copy())
-
-    # Final image
-    final_image = cv2.addWeighted(balls, 0.5, holes, 0.5, 0)
-
-    # ======Results======
-    # Original Image
-    cv2.imshow('Original Image', orig_image)
-    cv2.waitKey(0)
-
-    # Snooker Table
-    cv2.imshow('Snooker Table', snooker_table)
-    cv2.waitKey(0)
-
-    # Balls Highlighted
-    cv2.imshow('Balls Highlighted', balls)
-    cv2.waitKey(0)
-
-    # Holes Highlighted
-    cv2.imshow('Holes Highlighted', holes)
-    cv2.waitKey(0)
-
-    # Final image
-    cv2.imshow('Final', final_image)
-    cv2.waitKey(0)
-
-    # Clean-up
-    cv2.destroyAllWindows()
-
+import tkinter as tk
+from tkinter import ttk
+from gui import select_video, select_output_directory, start_process
 
 if __name__ == '__main__':
-    input_video_path = 'videos/snooker_vidi.mp4'
-    output_video_path = 'videos/output_video.mp4'
+    # create the root window
+    root = tk.Tk()
+    root.title('Snooker point counter')
+    root.resizable(False, False)
+    root.geometry('600x300')
+    root.grid_anchor('center')
 
-    process_video(input_video_path, output_video_path)
-    #process_picture()
+    # create label to selected video
+    selected_video_label = ttk.Label(
+        root,
+        text="Selected video: Video isn't selected!"
+    )
+    selected_video_label.grid(row=0, column=0)
 
+    # create button to select video
+    select_video_button = ttk.Button(
+        root,
+        text='Select video',
+        command=lambda: select_video(selected_video_label)
+    )
+    select_video_button.grid(row=1, column=0)
+
+    # create label to selected output directory
+    selected_output_directory_label = ttk.Label(
+        root,
+        text="Selected output directory: Directory isn't selected!"
+    )
+    selected_output_directory_label.grid(row=3, column=0)
+
+    # create button to select output directory
+    select_output_directory_button = ttk.Button(
+        root,
+        text='Select output directory',
+        command=lambda: select_output_directory(selected_output_directory_label)
+    )
+    select_output_directory_button.grid(row=4, column=0)
+
+    # create start process button
+    start_button = ttk.Button(
+        root,
+        text='Start process',
+        command=start_process
+    )
+    start_button.grid(row=6, column=0)
+
+    root.mainloop()
