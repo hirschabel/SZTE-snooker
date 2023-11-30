@@ -27,7 +27,12 @@ def process_video(input_path, output_path):
         _, snooker_table = find_snooker_table(frame.copy())
 
         # Find balls present on table
-        balls = find_balls(snooker_table.copy())
+        # RESULT CONTAINS LOCATION OF BALLS
+        result = {
+            "red": []
+        }
+
+        balls = find_balls(snooker_table.copy(), result)
 
         # Find holes
         holes = find_holes(snooker_table.copy())
