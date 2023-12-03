@@ -1,6 +1,28 @@
 # SZTE-snooker
 Szegedi Tudományegyetem ProgInfo MSc - Képfeldolgozás haladóknak gyak.
 
+# Előfeltételek
+- Python verzió: [3.11.5]
+- Modulok:
+  - **matplotlib**
+    ```
+    pip install matplotlib
+    ```
+  - **cv2**
+    ```
+    pip install opencv-python
+    ```
+  - **numpy**
+    ```
+    pip install numpy
+    ```
+
+# Futtatás
+  - *snooker* mappában:
+    ```
+    py main.py
+    ```
+
 # Használat
 
  - Kell választani egy bementi videót, valamint egy kimeneti foldert
