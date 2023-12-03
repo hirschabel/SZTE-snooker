@@ -52,6 +52,8 @@ def process_video(input_path, output_path):
         for prev_key in previous_result:
             if prev_key != 'white' and prev_key not in result:
                 disappeared_balls[prev_key] = frame_count
+            if prev_key == 'red' and len(previous_result[prev_key]) != len(result[prev_key]):
+                pass  # TODO: szükséges a red-ek cimkezese, jelenleg nem tudjuk megkülönböztetni őket
 
         # Itt nézzük, hogy tényleg eltűnt-e
         for disappeared_ball in list(disappeared_balls.keys()):
@@ -76,88 +78,95 @@ def process_video(input_path, output_path):
             white = result.get("white")
             other = result.get(ball)
 
-            if (white and other) and (white != other):
-                white_ball_position = (white.get("x"), white.get("y"))  # Example coordinates of the white ball (x, y)
-                other_ball_position = (other.get("x"), other.get("y"))  # Example coordinates of the other ball (x, y)
+            golyok = []
+            if ball == "red":
+                golyok = other
+            else:
+                golyok.append(other)
 
-                # Calculate the line between the two points
-                line_thickness = 2
-                cv2.line(final_image, white_ball_position, other_ball_position, (255, 0, 0), line_thickness)
+            for golyo in golyok:
+                if (white and golyo) and (white != golyo):
+                    white_ball_position = (white.get("x"), white.get("y"))  # Example coordinates of the white ball (x, y)
+                    other_ball_position = (golyo.get("x"), golyo.get("y"))  # Example coordinates of the other ball (x, y)
 
-                # Calculate the extended line beyond the other ball's position
-                delta_x = other_ball_position[0] - white_ball_position[0]
-                delta_y = other_ball_position[1] - white_ball_position[1]
+                    # Calculate the line between the two points
+                    line_thickness = 2
+                    cv2.line(final_image, white_ball_position, other_ball_position, (255, 0, 0), line_thickness)
 
-                temp_x, temp_y = other_ball_position
-                while 0 < temp_x < final_image.shape[1] and 0 <= temp_y < final_image.shape[0]:
-                    temp_x += delta_x
-                    temp_y += delta_y
+                    # Calculate the extended line beyond the other ball's position
+                    delta_x = other_ball_position[0] - white_ball_position[0]
+                    delta_y = other_ball_position[1] - white_ball_position[1]
 
-                extended_position = (int(temp_x), int(temp_y))
+                    temp_x, temp_y = other_ball_position
+                    while 0 < temp_x < final_image.shape[1] and 0 <= temp_y < final_image.shape[0]:
+                        temp_x += delta_x
+                        temp_y += delta_y
 
-                # Draw the extended line
-                cv2.line(final_image, other_ball_position, extended_position, (0, 255, 0), line_thickness)
+                    extended_position = (int(temp_x), int(temp_y))
 
-                ########################################################################################################
-                # Hova mehet be a golyó, ha most leütjük?
+                    # Draw the extended line
+                    cv2.line(final_image, other_ball_position, extended_position, (0, 255, 0), line_thickness)
 
-                # Initial position of the line starting from the other ball
-                current_x, current_y = other_ball_position
+                    ########################################################################################################
+                    # Hova mehet be a golyó, ha most leütjük?
 
-                # Iterate and extend the line until reaching the edge of the image
-                while 0 <= current_x < final_image.shape[1] and 0 <= current_y < final_image.shape[0]:
-                    current_x += delta_x
-                    current_y += delta_y
+                    # Initial position of the line starting from the other ball
+                    current_x, current_y = other_ball_position
 
-                if current_x > final_image.shape[1]:
-                    current_x = final_image.shape[1]
+                    # Iterate and extend the line until reaching the edge of the image
+                    while 0 <= current_x < final_image.shape[1] and 0 <= current_y < final_image.shape[0]:
+                        current_x += delta_x
+                        current_y += delta_y
 
-                if current_y < final_image.shape[0]:
-                    current_y = final_image.shape[0]
+                    if current_x > final_image.shape[1]:
+                        current_x = final_image.shape[1]
 
-                # Mark the final point where the line reaches the edge
-                final_position = (int(current_x), int(current_y))
+                    if current_y < final_image.shape[0]:
+                        current_y = final_image.shape[0]
 
-                # Find the intersection point with the image boundary
-                max_x, max_y = final_image.shape[1], final_image.shape[0]
+                    # Mark the final point where the line reaches the edge
+                    final_position = (int(current_x), int(current_y))
 
-                if delta_x == 0:  # Vertical line
-                    final_position = (other_ball_position[0], 0 if delta_y < 0 else max_y - 1)
-                else:
-                    slope = delta_y / delta_x
-                    if abs(slope) <= max_y / max_x:  # Intersects with left or right boundary
-                        final_position = (
-                        0 if delta_x < 0 else max_x - 1, int(other_ball_position[1] - slope * other_ball_position[0]))
-                    else:  # Intersects with top or bottom boundary
-                        final_position = (int(other_ball_position[0] - (1 / slope) * (
-                                    other_ball_position[1] - (0 if delta_y < 0 else max_y - 1))),
-                                          0 if delta_y < 0 else max_y - 1)
+                    # Find the intersection point with the image boundary
+                    max_x, max_y = final_image.shape[1], final_image.shape[0]
 
-                cv2.circle(final_image, final_position, 5, (0, 0, 255), -1)
-
-                ########################################################################################################
-                # Melyik lyukhoz lenne a golyó legközelebb?
-
-                top_boundary = int(final_image.shape[0] * 0.2)  # 20% of the image height
-                bottom_boundary = int(final_image.shape[0] * 0.8)  # 80% of the image height
-                left_boundary = int(final_image.shape[1] * 0.333)  # 33.3% of the image width
-                right_boundary = int(final_image.shape[1] * 0.666)  # 66.6% of the image width
-
-                # Check the position of the marked point relative to the defined boundaries
-                if final_position[1] < top_boundary:
-                    if final_position[0] < left_boundary:
-                        balls_expected_location[ball] = "top_left"
-                    elif left_boundary <= final_position[0] <= right_boundary:
-                        balls_expected_location[ball] = "top_middle"
+                    if delta_x == 0:  # Vertical line
+                        final_position = (other_ball_position[0], 0 if delta_y < 0 else max_y - 1)
                     else:
-                        balls_expected_location[ball] = "top_right"
-                elif final_position[1] > bottom_boundary:
-                    if final_position[0] < left_boundary:
-                        balls_expected_location[ball] = "bottom_left"
-                    elif left_boundary <= final_position[0] <= right_boundary:
-                        balls_expected_location[ball] = "bottom_middle"
-                    else:
-                        balls_expected_location[ball] = "bottom_right"
+                        slope = delta_y / delta_x
+                        if abs(slope) <= max_y / max_x:  # Intersects with left or right boundary
+                            final_position = (
+                            0 if delta_x < 0 else max_x - 1, int(other_ball_position[1] - slope * other_ball_position[0]))
+                        else:  # Intersects with top or bottom boundary
+                            final_position = (int(other_ball_position[0] - (1 / slope) * (
+                                        other_ball_position[1] - (0 if delta_y < 0 else max_y - 1))),
+                                              0 if delta_y < 0 else max_y - 1)
+
+                    cv2.circle(final_image, final_position, 5, (0, 0, 255), -1)
+
+                    ########################################################################################################
+                    # Melyik lyukhoz lenne a golyó legközelebb?
+
+                    top_boundary = int(final_image.shape[0] * 0.2)  # 20% of the image height
+                    bottom_boundary = int(final_image.shape[0] * 0.8)  # 80% of the image height
+                    left_boundary = int(final_image.shape[1] * 0.333)  # 33.3% of the image width
+                    right_boundary = int(final_image.shape[1] * 0.666)  # 66.6% of the image width
+
+                    # Check the position of the marked point relative to the defined boundaries
+                    if final_position[1] < top_boundary:
+                        if final_position[0] < left_boundary:
+                            balls_expected_location[ball] = "top_left"
+                        elif left_boundary <= final_position[0] <= right_boundary:
+                            balls_expected_location[ball] = "top_middle"
+                        else:
+                            balls_expected_location[ball] = "top_right"
+                    elif final_position[1] > bottom_boundary:
+                        if final_position[0] < left_boundary:
+                            balls_expected_location[ball] = "bottom_left"
+                        elif left_boundary <= final_position[0] <= right_boundary:
+                            balls_expected_location[ball] = "bottom_middle"
+                        else:
+                            balls_expected_location[ball] = "bottom_right"
 
         # Write the processed frame to the output video
         frame[y:y + h, x:x + w] = final_image

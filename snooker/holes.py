@@ -78,20 +78,23 @@ def find_biggest_hole(img):
     # Kép felső és alsó határ pixelei, amikben keressük a lyukakat
     min_x, max_x = 10, image.shape[0] - 50
 
-    biggset_contour_area = contours[0]
+    biggset_contour_area = 0
+    max_area = -1
 
     for contour in contours:
-        if cv2.contourArea(contour) > cv2.contourArea(biggset_contour_area):
+        if cv2.contourArea(contour) > max_area:
+            max_area = cv2.contourArea(contour)
             biggset_contour_area = contour
 
-    x, y, w, h = cv2.boundingRect(biggset_contour_area)
 
-    if min_x > y or y > max_x:  # x és y cserélődik, mert python :)
-        (cx, cy), radius = cv2.minEnclosingCircle(biggset_contour_area)
-        center = (int(cx), int(cy))
-        radius = int(radius)
+    if max_area != -1:
+        x, y, w, h = cv2.boundingRect(biggset_contour_area)
+        if min_x > y or y > max_x:  # x és y cserélődik, mert python :)
+            (cx, cy), radius = cv2.minEnclosingCircle(biggset_contour_area)
+            center = (int(cx), int(cy))
+            radius = int(radius)
 
-        cv2.circle(image, center, radius, (0, 0, 255), 2)
+            cv2.circle(image, center, radius, (0, 0, 255), 2)
 
 
 def find_holes(img, balls_in_pocket):
