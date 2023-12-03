@@ -131,7 +131,24 @@ def find_holes(img, balls_in_pocket):
 
     # List of balls fallen in a specific pocket
     for pocket_list in balls_in_pocket:
-        text = ','.join(balls_in_pocket[pocket_list])
+        ball_list = []
+        for balls in balls_in_pocket[pocket_list]:
+            if balls == "red":
+                ball_list.append(balls + "(1p)")
+            elif balls == "yellow":
+                ball_list.append(balls + "(2p)")
+            elif balls == "green":
+                ball_list.append(balls + "(3p)")
+            elif balls == "brown":
+                ball_list.append(balls + "(4p)")
+            elif balls == "blue":
+                ball_list.append(balls + "(5p)")
+            elif balls == "pink":
+                ball_list.append(balls + "(6p)")
+            elif balls == "black":
+                ball_list.append(balls + "(7p)")
+
+        text = ','.join(ball_list)
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 0.8
         font_thickness = 1

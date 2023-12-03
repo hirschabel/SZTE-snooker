@@ -33,4 +33,4 @@ def find_snooker_table(img):
     # Draw the rectangle on the original image
     cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
-    return img, img_copy[y:y + h, x:x + w]
+    return img_copy[y:y + h, x:x + w], x, y, w, h

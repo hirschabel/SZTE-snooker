@@ -38,7 +38,7 @@ def process_video(input_path, output_path):
             break
 
         # Find snooker table boundaries
-        _, snooker_table = find_snooker_table(frame.copy())
+        snooker_table, x, y, w, h = find_snooker_table(frame.copy())
 
         # Find balls present on table
         # RESULT CONTAINS LOCATION OF BALLS
@@ -101,7 +101,6 @@ def process_video(input_path, output_path):
                 ########################################################################################################
                 # Hova mehet be a golyó, ha most leütjük?
 
-
                 # Initial position of the line starting from the other ball
                 current_x, current_y = other_ball_position
 
@@ -152,12 +151,7 @@ def process_video(input_path, output_path):
                         balls_expected_location[ball] = "top_middle"
                     else:
                         balls_expected_location[ball] = "top_right"
-                elif top_boundary <= final_position[1] <= bottom_boundary:
-                    if final_position[0] < left_boundary:
-                        pass
-                    else:
-                        pass
-                else:
+                elif final_position[1] > bottom_boundary:
                     if final_position[0] < left_boundary:
                         balls_expected_location[ball] = "bottom_left"
                     elif left_boundary <= final_position[0] <= right_boundary:
@@ -166,10 +160,11 @@ def process_video(input_path, output_path):
                         balls_expected_location[ball] = "bottom_right"
 
         # Write the processed frame to the output video
-
+        frame[y:y + h, x:x + w] = final_image
+        out.write(frame)
 
         # Display the processed frame (optional)
-        cv2.imshow('Processed Frame', final_image)
+        cv2.imshow('Processed Frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

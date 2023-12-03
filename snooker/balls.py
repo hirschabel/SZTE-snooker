@@ -39,7 +39,7 @@ def sort_ball(color, result, x, y):
       'y': y,
     }
   if (color[0] > 60 and color[0] < 90 and color[1] > 130 and color[1] < 160 and color[2] > 170 and color[2] < 200):
-    result['orange'] = {
+    result['brown'] = {
       'x': x,
       'y': y,
     }
