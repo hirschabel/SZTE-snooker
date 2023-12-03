@@ -12,7 +12,7 @@ def sort_ball(color, result, x, y):
       'x': x,
       'y': y,
     })
-  if (color[0] > 180 and color[0] < 200 and color[1] > 240 and color[1] < 255 and color[2] > 240 and color[2] < 255):
+  if (color[0] > 180 and color[0] < 255 and color[1] > 240 and color[1] < 255 and color[2] > 240 and color[2] < 255):
     result['white'] = {
       'x': x,
       'y': y,

@@ -17,7 +17,21 @@ def process_video(input_path, output_path):
     # Create VideoWriter object to save the processed video
     out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (frame_width, frame_height))
 
+    frame_count = 0
+    previous_result = {}
+    balls_expected_location = {}
+    disappeared_balls = {}
+    balls_in_pocket = {
+        "top_left": [],
+        "top_middle": [],
+        "top_right": [],
+        "bottom_left": [],
+        "bottom_middle": [],
+        "bottom_right": []
+    }
+
     while video_capture.isOpened():
+        frame_count += 1
         ret, frame = video_capture.read()
 
         if not ret:
@@ -34,14 +48,125 @@ def process_video(input_path, output_path):
 
         balls = find_balls(snooker_table.copy(), result)
 
+        # Itt nézzük, hogy előző frame-ben volt, most nincs golyó
+        for prev_key in previous_result:
+            if prev_key != 'white' and prev_key not in result:
+                disappeared_balls[prev_key] = frame_count
+
+        # Itt nézzük, hogy tényleg eltűnt-e
+        for disappeared_ball in list(disappeared_balls.keys()):
+            if disappeared_ball in result.keys():
+                del disappeared_balls[disappeared_ball]
+            else:
+                if disappeared_balls[disappeared_ball] > 10:  # Eltűnés frame határérték
+                    del disappeared_balls[disappeared_ball]
+                    balls_in_pocket[balls_expected_location[disappeared_ball]].append(disappeared_ball)
+
+        previous_result = result
+
+
         # Find holes
-        holes = find_holes(snooker_table.copy())
+        holes = find_holes(snooker_table.copy(), balls_in_pocket)
 
         # Final image
         final_image = cv2.addWeighted(balls, 0.5, holes, 0.5, 0)
 
+        # Lehetséges leütések számítása
+        for ball in result:
+            white = result.get("white")
+            other = result.get(ball)
+
+            if (white and other) and (white != other):
+                white_ball_position = (white.get("x"), white.get("y"))  # Example coordinates of the white ball (x, y)
+                other_ball_position = (other.get("x"), other.get("y"))  # Example coordinates of the other ball (x, y)
+
+                # Calculate the line between the two points
+                line_thickness = 2
+                cv2.line(final_image, white_ball_position, other_ball_position, (255, 0, 0), line_thickness)
+
+                # Calculate the extended line beyond the other ball's position
+                delta_x = other_ball_position[0] - white_ball_position[0]
+                delta_y = other_ball_position[1] - white_ball_position[1]
+
+                temp_x, temp_y = other_ball_position
+                while 0 < temp_x < final_image.shape[1] and 0 <= temp_y < final_image.shape[0]:
+                    temp_x += delta_x
+                    temp_y += delta_y
+
+                extended_position = (int(temp_x), int(temp_y))
+
+                # Draw the extended line
+                cv2.line(final_image, other_ball_position, extended_position, (0, 255, 0), line_thickness)
+
+                ########################################################################################################
+                # Hova mehet be a golyó, ha most leütjük?
+
+
+                # Initial position of the line starting from the other ball
+                current_x, current_y = other_ball_position
+
+                # Iterate and extend the line until reaching the edge of the image
+                while 0 <= current_x < final_image.shape[1] and 0 <= current_y < final_image.shape[0]:
+                    current_x += delta_x
+                    current_y += delta_y
+
+                if current_x > final_image.shape[1]:
+                    current_x = final_image.shape[1]
+
+                if current_y < final_image.shape[0]:
+                    current_y = final_image.shape[0]
+
+                # Mark the final point where the line reaches the edge
+                final_position = (int(current_x), int(current_y))
+
+                # Find the intersection point with the image boundary
+                max_x, max_y = final_image.shape[1], final_image.shape[0]
+
+                if delta_x == 0:  # Vertical line
+                    final_position = (other_ball_position[0], 0 if delta_y < 0 else max_y - 1)
+                else:
+                    slope = delta_y / delta_x
+                    if abs(slope) <= max_y / max_x:  # Intersects with left or right boundary
+                        final_position = (
+                        0 if delta_x < 0 else max_x - 1, int(other_ball_position[1] - slope * other_ball_position[0]))
+                    else:  # Intersects with top or bottom boundary
+                        final_position = (int(other_ball_position[0] - (1 / slope) * (
+                                    other_ball_position[1] - (0 if delta_y < 0 else max_y - 1))),
+                                          0 if delta_y < 0 else max_y - 1)
+
+                cv2.circle(final_image, final_position, 5, (0, 0, 255), -1)
+
+                ########################################################################################################
+                # Melyik lyukhoz lenne a golyó legközelebb?
+
+                top_boundary = int(final_image.shape[0] * 0.2)  # 20% of the image height
+                bottom_boundary = int(final_image.shape[0] * 0.8)  # 80% of the image height
+                left_boundary = int(final_image.shape[1] * 0.333)  # 33.3% of the image width
+                right_boundary = int(final_image.shape[1] * 0.666)  # 66.6% of the image width
+
+                # Check the position of the marked point relative to the defined boundaries
+                if final_position[1] < top_boundary:
+                    if final_position[0] < left_boundary:
+                        balls_expected_location[ball] = "top_left"
+                    elif left_boundary <= final_position[0] <= right_boundary:
+                        balls_expected_location[ball] = "top_middle"
+                    else:
+                        balls_expected_location[ball] = "top_right"
+                elif top_boundary <= final_position[1] <= bottom_boundary:
+                    if final_position[0] < left_boundary:
+                        pass
+                    else:
+                        pass
+                else:
+                    if final_position[0] < left_boundary:
+                        balls_expected_location[ball] = "bottom_left"
+                    elif left_boundary <= final_position[0] <= right_boundary:
+                        balls_expected_location[ball] = "bottom_middle"
+                    else:
+                        balls_expected_location[ball] = "bottom_right"
+
         # Write the processed frame to the output video
-        out.write(final_image)
+
 
         # Display the processed frame (optional)
         cv2.imshow('Processed Frame', final_image)
@@ -51,46 +176,4 @@ def process_video(input_path, output_path):
     # Release video capture and writer
     video_capture.release()
     out.release()
-    cv2.destroyAllWindows()
-
-
-# Ez az eddigi működés értékek állítgatására jó
-def process_picture():
-    # Read the image
-    orig_image = cv2.imread("videos/teszt1.png")
-
-    # Find snooker table boundaries
-    img, snooker_table = find_snooker_table(orig_image.copy())
-
-    # Find balls present on table
-    balls = find_balls(snooker_table.copy())
-
-    # Find holes
-    holes = find_holes(snooker_table.copy())
-
-    # Final image
-    final_image = cv2.addWeighted(balls, 0.5, holes, 0.5, 0)
-
-    # ======Results======
-    # Original Image
-    cv2.imshow('Original Image', orig_image)
-    cv2.waitKey(0)
-
-    # Snooker Table
-    cv2.imshow('Snooker Table', snooker_table)
-    cv2.waitKey(0)
-
-    # Balls Highlighted
-    cv2.imshow('Balls Highlighted', balls)
-    cv2.waitKey(0)
-
-    # Holes Highlighted
-    cv2.imshow('Holes Highlighted', holes)
-    cv2.waitKey(0)
-
-    # Final image
-    cv2.imshow('Final', final_image)
-    cv2.waitKey(0)
-
-    # Clean-up
     cv2.destroyAllWindows()
